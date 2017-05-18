@@ -39,18 +39,7 @@ public class ProgressController : MonoBehaviour {
 
 	float startTime;
 	float endTime;
-	public float time {
-		get
-		{
-			if (completed) {
-				return endTime - startTime;
-			}
-			if (busy) {
-				return Handle.GetTime() - startTime;
-			}
-			return 0.0f;
-		}
-	}
+	public float time;
 
 
 	void Start()
@@ -83,7 +72,9 @@ public class ProgressController : MonoBehaviour {
 
 	public void StartProcess()
 	{
-		startTime = Handle.GetTime();
+		rate = 0.0f;
+		time = 0;
+		startTime = GetTime();
 		busy = true;
 		while (mBusyCount < processMax) {
 			StartNextProcess();
@@ -114,20 +105,32 @@ public class ProgressController : MonoBehaviour {
 	}
 	void Complete()
 	{
-		endTime = Handle.GetTime();
+		endTime = GetTime();
 		onComplete.Invoke();
 	}
 
 	void Update()
 	{
 		if (busy) {
+			time = GetTime() - startTime;
 			UpdateRate();
 			if (completed) {
 				busy = false;
 			}
 		}
 	}
+
 	void UpdateRate()
+	{
+		var newRate = CalculateTotalRate();
+		if (rate < newRate) {
+			rate = newRate;
+			if (onValueChanged != null) {
+				onValueChanged.Invoke(rate);
+			}
+		}
+	}
+	float CalculateTotalRate()
 	{
 		float sumRate = 0;
 		float sumAll = 0;
@@ -136,19 +139,10 @@ public class ProgressController : MonoBehaviour {
 			if (1.0f < rate) {
 				rate = 1.0f;
 			}
-			if (rate < handle.rate) {
-				rate = handle.rate;
-			}
 			sumRate += rate * handle.predictedTime;
 			sumAll += handle.predictedTime;
 		}
-		var newRate = sumRate / sumAll;
-		if (rate < newRate) {
-			rate = newRate;
-			if (onValueChanged != null) {
-				onValueChanged.Invoke(rate);
-			}
-		}
+		return sumRate / sumAll;
 	}
 	public delegate float CustomizeRateDelegate(Handle handle);
 	public CustomizeRateDelegate customizeRateDelegate = CustomizeRate;
@@ -160,9 +154,17 @@ public class ProgressController : MonoBehaviour {
 		if (limitter < predictedRate) {
 			predictedRate = limitter;
 		}
+		if (predictedRate < handle.rate) {
+			predictedRate = handle.rate;
+		}
 		return predictedRate;
 	}
 
+
+	public static float GetTime()
+	{
+		return Time.realtimeSinceStartup;
+	}
 
 
 	public class Handle {
@@ -177,6 +179,10 @@ public class ProgressController : MonoBehaviour {
 		public State state
 		{
 			get { return mState; }
+		}
+		float GetTime()
+		{
+			return controller.time;
 		}
 
 		public string name;
@@ -201,10 +207,6 @@ public class ProgressController : MonoBehaviour {
 		public float rate;
 		internal ProcessDelegate process;
 
-		public static float GetTime()
-		{
-			return Time.realtimeSinceStartup;
-		}
 		internal void Start()
 		{
 			mState = State.Started;
@@ -222,6 +224,10 @@ public class ProgressController : MonoBehaviour {
 		}
 
 		public float GetPredictedRate()
+		{
+			return GetPredictedRate(predictedTime);
+		}
+		public float GetPredictedRate(float predictedTime)
 		{
 			if (!started) {
 				return 0;

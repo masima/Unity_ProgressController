@@ -46,11 +46,11 @@ public class sample : MonoBehaviour {
 		GUILayout.BeginArea(new Rect(0, 0, Screen.width, Screen.height));
 
 		GUILayout.BeginHorizontal();
-		GUILayout.Label("総プロセス数:" + processCount.ToString("D2"));
+		GUILayout.Label("総プロセス数:" + processCount.ToString());
 		processCount = (int)GUILayout.HorizontalSlider(processCount, 1, 15);
 		GUILayout.EndHorizontal();
 		GUILayout.BeginHorizontal();
-		GUILayout.Label("同時処理プロセス数:" + processMax.ToString("D2"));
+		GUILayout.Label("同時処理プロセス数:" + processMax.ToString());
 		processMax = (int)GUILayout.HorizontalSlider(processMax, 1, 3);
 		GUILayout.EndHorizontal();
 
@@ -104,10 +104,10 @@ public class sample : MonoBehaviour {
 	//進捗状況を随時報告
 	IEnumerator SampleLiner(ProgressController.Handle handle)
 	{
-		var startTime = ProgressController.Handle.GetTime();
+		var startTime = ProgressController.GetTime();
 		do {
 			yield return null;
-			var time = ProgressController.Handle.GetTime();
+			var time = ProgressController.GetTime();
 			var rate = (time - startTime) / processEndTime;
 			if (1.0f < rate) {
 				rate = 1.0f;
