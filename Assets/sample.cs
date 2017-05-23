@@ -104,6 +104,7 @@ public class sample : MonoBehaviour {
 	//進捗状況を随時報告
 	IEnumerator SampleLiner(ProgressController.Handle handle)
 	{
+		Debug.Log("SimpleLiner start:" + handle.name);
 		var startTime = ProgressController.GetTime();
 		do {
 			yield return null;
@@ -119,6 +120,7 @@ public class sample : MonoBehaviour {
 	//終了時に完了のみ報告
 	IEnumerator SampleStep(ProgressController.Handle handle)
 	{
+		Debug.Log("SimpleSetp start:" + handle.name);
 		yield return new WaitForSeconds(processEndTime);
 		handle.rate = 1.0f;
 	}
