@@ -58,6 +58,7 @@ public class ProgressController : MonoBehaviour {
 	}
 
 	public delegate IEnumerator ProcessDelegate(Handle handle);
+	public delegate void ProcessNotificationDelegate(Handle handle);
 
 	public Handle EntryProcess(float predictedTime, ProcessDelegate processDelegate)
 	{
@@ -65,9 +66,29 @@ public class ProgressController : MonoBehaviour {
 		handle.name = mHandleList.Count().ToString();
 		handle.controller = this;
 		handle.predictedTime = predictedTime;
-		handle.process = processDelegate;
+		handle.process = processDelegate(handle);
 		mHandleList.Add(handle);
 		return handle;
+	}
+	/// <summary>
+	/// processDelegate内の処理が完了した際、handle.Complete()を実行する必要有。
+	/// </summary>
+	public Handle EntryProcess(float predictedTime, ProcessNotificationDelegate processDelegate)
+	{
+		var handle = new Handle();
+		handle.name = mHandleList.Count().ToString();
+		handle.controller = this;
+		handle.predictedTime = predictedTime;
+		handle.process = ProcessNotificationAsync(handle, processDelegate);
+		mHandleList.Add(handle);
+		return handle;
+	}
+	static IEnumerator ProcessNotificationAsync(Handle handle, ProcessNotificationDelegate process)
+	{
+		process(handle);
+		while(!handle.completed) {
+			yield return null;
+		}
 	}
 
 	public void StartProcess()
@@ -205,7 +226,7 @@ public class ProgressController : MonoBehaviour {
 		}
 		public float predictedTime = 1.0f;
 		public float rate;
-		internal ProcessDelegate process;
+		internal IEnumerator process;
 
 		internal void Start()
 		{
@@ -215,8 +236,15 @@ public class ProgressController : MonoBehaviour {
 		}
 		IEnumerator  ProcessCoroutine()
 		{
-			yield return process(this);
+			yield return process;
+			Complete();
 
+		}
+		public void Complete()
+		{
+			if (mState == State.Compeleted) {
+				return;
+			}
 			endTime = GetTime();
 			rate = 1.0f;
 			mState = State.Compeleted;
